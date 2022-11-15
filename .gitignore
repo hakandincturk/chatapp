@@ -1,0 +1,9 @@
+client/node_modules
+
+server/node_modules
+server/.firebase
+server/.env
+server/api/src/config/fbAdmin-key.json
+server/api/src/config/firebase-config.json
+server/.firebaserc
+server/firebase.json
