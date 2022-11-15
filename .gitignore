@@ -1,4 +1,6 @@
 client/node_modules
+client/src/config/fbAdmin-key.json
+client/src/config/firebase-config.json
 
 server/node_modules
 server/.firebase
