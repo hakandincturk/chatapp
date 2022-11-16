@@ -6,14 +6,10 @@ import Dashboard from './Dashboard'
 import { ContactsProvider } from '../contexts/ContactsProvider'
 import { ConversationsProvider } from '../contexts/ConversationsProvider';
 import { SocketProvider } from '../contexts/SocketProvider';
-
-import { initializeApp } from "firebase/app";
-import firebaseConfig from '../config/firebase-config.json'
+import db from '../Helpers/FirebaseHelper'
 
 function App() {
   const [id, setId] = useLocalStorage('id')
-
-  initializeApp(firebaseConfig)
 
   const dashboard = (
     <SocketProvider id={id}>
@@ -27,7 +23,7 @@ function App() {
 
   return (
     // id ? dashboard : <Login onIdSubmit={setId} />
-    id === 1 ? <Auth onIdSubmit={setId}/> : dashboard
+    id === 1 ? <Auth onIdSubmit={setId} /> : dashboard
   )
 }
 

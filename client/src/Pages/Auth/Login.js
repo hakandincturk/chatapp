@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Form, Button, FormLabel } from 'react-bootstrap'
 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
@@ -12,7 +12,7 @@ export default function Login({ onIdSubmit }) {
   async function handleSubmit(e) {
     e.preventDefault()
     try {
-      
+    
       await signInWithEmailAndPassword(getAuth(), email, password)
         .then((res) => {
           console.log(res);

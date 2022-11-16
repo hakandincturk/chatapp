@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useDebugValue, useState } from 'react'
 import { Form, Button, FormLabel } from 'react-bootstrap'
-
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import db from 'firebase'
+
+import db from '../../Helpers/FirebaseHelper'
 
 export default function Register({ onIdSubmit }) {
   const [email, setEmail] = useState('')
@@ -16,9 +16,6 @@ export default function Register({ onIdSubmit }) {
       await createUserWithEmailAndPassword(getAuth(), email, password)
       .then(async (res) => {
 
-        await db.collection('users').onSnapShot((snapshot) => {
-          console.log('snapshot --> ', snapshot);
-        })
         sessionStorage.setItem('Auth Token', res._tokenResponse.refreshToken)
         onIdSubmit(email)
       }).catch((err) => {
