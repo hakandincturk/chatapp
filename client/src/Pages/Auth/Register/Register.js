@@ -1,8 +1,10 @@
-import React, { useDebugValue, useState } from 'react'
+import React, { useState } from 'react'
 import { Form, Button, FormLabel } from 'react-bootstrap'
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 
-import db from '../../Helpers/FirebaseHelper'
+import { setDoc, doc } from 'firebase/firestore'
+import db from '../../../Helpers/FirebaseHelper'
+
 
 export default function Register({ onIdSubmit }) {
   const [email, setEmail] = useState('')
@@ -13,11 +15,21 @@ export default function Register({ onIdSubmit }) {
     e.preventDefault()
 
     try {
+
       await createUserWithEmailAndPassword(getAuth(), email, password)
       .then(async (res) => {
-
         sessionStorage.setItem('Auth Token', res._tokenResponse.refreshToken)
-        onIdSubmit(email)
+
+        await setDoc(doc(db, 'users', res.user.uid), {
+          email,    
+          password
+        }).then((setDocRes) => {
+          onIdSubmit(email)
+        }).catch((err) => {
+          console.log('setDoc.err.code --> ', err.code);
+          setError('Hata meydana geldi.')
+        } );  
+
       }).catch((err) => {
         if (err.code === 'auth/invalid-email') {
           setError('Email hatali.')
@@ -25,10 +37,10 @@ export default function Register({ onIdSubmit }) {
         else if(err.code === 'auth/email-already-in-use') {
           setError('Email kullanimda.')
         } 
-        else console.log(err.code);
+        else console.log('createUser.err.code --> ', err.code);
       } )
     } catch (error) {
-      console.log(error);
+      console.log('button.error.code --> ', error.code);
     }
     
   }

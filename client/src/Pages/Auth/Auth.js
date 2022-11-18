@@ -1,8 +1,8 @@
 import React from 'react'
 import { Container, Tabs, Tab } from 'react-bootstrap'
 
-import Register from './Register'
-import Login from './Login'
+import Register from './Register/Register'
+import Login from './Login/Login'
 
 export default function Auth({ onIdSubmit }) {
 
