@@ -1,5 +1,6 @@
 import React from 'react'
 import { Container, Tabs, Tab } from 'react-bootstrap'
+import { Toaster } from 'react-hot-toast';
 
 import Register from './Register/Register'
 import Login from './Login/Login'
@@ -21,7 +22,7 @@ export default function Auth({ onIdSubmit }) {
         <Register onIdSubmit={onIdSubmit} />
       </Tab>
     </Tabs>
-      
+    <Toaster position='top-right'/>
     </Container>
   )
 }
