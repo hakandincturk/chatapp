@@ -18,7 +18,7 @@ export default function Register({ onIdSubmit }) {
 
       await createUserWithEmailAndPassword(getAuth(), email, password)
       .then(async (res) => {
-        sessionStorage.setItem('Auth Token', res._tokenResponse.refreshToken)
+        sessionStorage.setItem('access-token', res._tokenResponse.refreshToken)
 
         await setDoc(doc(db, 'users', email), {
           email,    

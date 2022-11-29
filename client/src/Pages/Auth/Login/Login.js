@@ -14,7 +14,7 @@ export default function Login({ onIdSubmit }) {
     try {
       await signInWithEmailAndPassword(getAuth(), email, password)
         .then((res) => {
-          sessionStorage.setItem('Auth Token', res._tokenResponse.refreshToken)
+          sessionStorage.setItem('access-token', res._tokenResponse.refreshToken)
           onIdSubmit(email)
         })
         .catch((err) => {

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 // import Login from './Login'
 import Auth from '../Pages/Auth/Auth'
 import useLocalStorage from '../hooks/useLocalStorage';
@@ -6,6 +6,8 @@ import Dashboard from '../Pages/Dashboard/Dashboard'
 import { ContactsProvider } from '../contexts/ContactsProvider'
 import { ConversationsProvider } from '../contexts/ConversationsProvider';
 import { SocketProvider } from '../contexts/SocketProvider';
+import { Toaster } from 'react-hot-toast';
+
 
 function App() {
   const [id, setId] = useLocalStorage('id')
@@ -17,7 +19,9 @@ function App() {
           <Dashboard id={id} />
         </ConversationsProvider>
       </ContactsProvider>
+      <Toaster position='top-right'/>
     </SocketProvider>
+    
   )
 
   return (

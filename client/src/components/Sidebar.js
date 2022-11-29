@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Tab, Nav, Button, Modal } from 'react-bootstrap'
 import Conversations from './Conversations'
 import Contacts from './Contacts'
@@ -8,6 +8,8 @@ import ProfileModal from './ProfileModal'
 
 import useLocalStorage from '../hooks/useLocalStorage';
 
+import { getDoc, doc } from 'firebase/firestore'
+import db from '../Helpers/FirebaseHelper'
 
 import { IoExit } from 'react-icons/io5'
 import { CgProfile } from 'react-icons/cg'
@@ -17,11 +19,25 @@ const CONTACTS_KEY = 'contacts'
 
 export default function Sidebar({ id }) {
   const [idd, setId] = useLocalStorage('id')
+  const [userData, setUserData] = useState()
   const [activeKey, setActiveKey] = useState(CONVERSATIONS_KEY)
   const [modalOpen, setModalOpen] = useState(false)
   const conversationsOpen = activeKey === CONVERSATIONS_KEY
   const [profileOpenModal, setProfileOpenModal] = useState(false)
   
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const docRef = doc(db, "users", id)
+        const docSnap = await getDoc(docRef);
+        setUserData(docSnap.data());
+      } catch (error) {
+        console.log('err --> ', error)
+      }
+    }
+    fetchUserData().catch((error) => console.log(error))
+  }, [id])
+
   const closeModal = () => {
     setModalOpen(false)
   }
@@ -64,7 +80,7 @@ export default function Sidebar({ id }) {
             style={{cursor:'pointer'}}
             onClick={() => setProfileOpenModal(true)}
           >
-            <CgProfile size={20} color={'#ccc'}/>
+            { userData ? <img className='rounded-circle' alt='not found' src={userData.image} width={36} height={36} /> : <CgProfile size={36} color={'#ccc'}/>}
             <span className="text-muted ml-2">{id}</span>
           </div>
           <div className='p-1' onClick={exitButtonHandle} style={{cursor:'pointer'}}>
