@@ -150,11 +150,11 @@ export default function ProfileModal({ closeModal }) {
           </FormGroup>
           <FormGroup>
             <Form.Label>Sifre</Form.Label>
-            <Form.Control type="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            <Form.Control type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
           </FormGroup>
           <FormGroup>
             <Form.Label>Tekrar Sifre</Form.Label>
-            <Form.Control type="new-password" value={newPasswordAgain} onChange={e => setNewPasswordAgain(e.target.value)} />
+            <Form.Control type="password" value={newPasswordAgain} onChange={e => setNewPasswordAgain(e.target.value)} />
           </FormGroup>
           <Button type="submit">Guncelle</Button>
         </Form>

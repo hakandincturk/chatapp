@@ -2,6 +2,8 @@ import React, { useContext, useState, useEffect, useCallback } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useContacts } from './ContactsProvider';
 import { useSocket } from './SocketProvider';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore'
+import db from '../Helpers/FirebaseHelper'
 
 const ConversationsContext = React.createContext()
 
@@ -15,13 +17,40 @@ export function ConversationsProvider({ id, children }) {
   const { contacts } = useContacts()
   const socket = useSocket()
 
+  useEffect(() => {
+    setConversations([])
+    const func = async () => {
+      // const snap = await getDoc(doc(db, 'users', id ))
+      await getDocs(collection(db, "conversations"))
+        .then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            if (doc?.data()?.recipients.includes(id)) {
+              const findLoggedUserIndex = doc.data().recipients.filter(x => x !== id)
+              setConversations(prevConversations => {
+                return [
+                  ...prevConversations, 
+                  {
+                    id: doc.data().id,
+                    messages: doc.data()?.messages,
+                    recipients: findLoggedUserIndex
+                  }
+                ]
+              })
+            }
+          });
+        })
+    }
+    func()
+  }, [id, setConversations])
+
   function createConversation(recipients) {
     setConversations(prevConversations => {
       return [...prevConversations, { recipients, messages: [] }]
     })
   }
 
-  const addMessageToConversation = useCallback(({ recipients, text, sender }) => {
+  const addMessageToConversation = useCallback(({ conversationId, recipients, text, sender }) => {
+    console.log('conversationId --> ', conversationId);
     setConversations(prevConversations => {
       let madeChange = false
       const newMessage = { sender, text }
@@ -37,16 +66,27 @@ export function ConversationsProvider({ id, children }) {
         return conversation
       })
 
+
       if (madeChange) {
+        setDoc(doc(db, 'users', `${id}`), {
+          conversations: newConversations
+        }, {merge: true}); 
         return newConversations
       } else {
+        setDoc(doc(db, 'users', `${id}`), {
+          conversations: [
+            ...prevConversations,
+            { recipients, messages: [newMessage] }
+          ]
+        }, {merge: true}); 
         return [
           ...prevConversations,
           { recipients, messages: [newMessage] }
         ]
       }
+
     })
-  }, [setConversations])
+  }, [id, setConversations])
 
   useEffect(() => {
     if (socket == null) return
@@ -56,8 +96,8 @@ export function ConversationsProvider({ id, children }) {
     return () => socket.off('receive-message')
   }, [socket, addMessageToConversation])
 
-  function sendMessage(recipients, text) {
-    socket.emit('send-message', { recipients, text })
+  function sendMessage(conversationId, recipients, text) {
+    socket.emit('send-message', { conversationId, recipients, text })
 
     addMessageToConversation({ recipients, text, sender: id })
   }
@@ -81,7 +121,7 @@ export function ConversationsProvider({ id, children }) {
     })
     
     const selected = index === selectedConversationIndex
-    return { ...conversation, messages, recipients, selected }
+    return { ...conversation, messages, recipients, selected, id: conversation.id }
   })
 
   const value = {

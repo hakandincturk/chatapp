@@ -21,6 +21,9 @@ export default function Login({ onIdSubmit }) {
           if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
             toast.error('Email veya sifre hatali.')
           }
+          else if (err.code === 'auth/network-request-failed') {
+            toast.error('Sunucu ile baglanti kurulamadi.')
+          }
           else console.log(err.code);
         })
 
@@ -38,7 +41,7 @@ export default function Login({ onIdSubmit }) {
       </Form.Group>
       <Form.Group>
         <Form.Label>Password</Form.Label>
-        <Form.Control type="text" value={password} onChange={(v) => setPassword(v.target.value)} required />
+        <Form.Control type="password" value={password} onChange={(v) => setPassword(v.target.value)} required />
       </Form.Group>   
       <Button type="submit" className="mr-2">Giriş Yap</Button>
     </Form>

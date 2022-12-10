@@ -15,6 +15,7 @@ export default function OpenConversation() {
     e.preventDefault()
 
     sendMessage(
+      selectedConversation.id,
       selectedConversation.recipients.map(r => r.id),
       text
     )
@@ -49,14 +50,14 @@ export default function OpenConversation() {
         <Form.Group className="m-2">
           <InputGroup>
             <Form.Control
-              as="textarea"
+              type="textarea"
               required
               value={text}
               onChange={e => setText(e.target.value)}
               style={{ height: '75px', resize: 'none' }}
             />
             <InputGroup.Append>
-              <Button type="submit">Send</Button>
+              <Button type="submit">Gönder</Button>
             </InputGroup.Append>
           </InputGroup>
         </Form.Group>

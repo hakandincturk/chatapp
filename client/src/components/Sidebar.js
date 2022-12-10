@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React, { useEffect, useState } from 'react'
 import { Tab, Nav, Button, Modal } from 'react-bootstrap'
 import Conversations from './Conversations'
@@ -19,6 +20,8 @@ const CONTACTS_KEY = 'contacts'
 
 export default function Sidebar({ id }) {
   const [idd, setId] = useLocalStorage('id')
+  const [contacts, setContacts] = useLocalStorage('contacts')
+  const [conversations, setConversations] = useLocalStorage('conversations')
   const [userData, setUserData] = useState()
   const [activeKey, setActiveKey] = useState(CONVERSATIONS_KEY)
   const [modalOpen, setModalOpen] = useState(false)
@@ -38,6 +41,7 @@ export default function Sidebar({ id }) {
     fetchUserData().catch((error) => console.log(error))
   }, [id])
 
+
   const closeModal = () => {
     setModalOpen(false)
   }
@@ -48,15 +52,13 @@ export default function Sidebar({ id }) {
 
   const exitButtonHandle = () => {
     setId(undefined)
+    setContacts([])
+    setConversations([])
     window.location.href = '';
   }
 
-  const profileButtonHandle = () => {
-    console.log(123);
-  }
-
   return (
-    <div style={{ width: '250px' }} className="d-flex flex-column">
+    <div style={{ minWidth: '250px' }} className="d-flex flex-column">
       <Tab.Container activeKey={activeKey} onSelect={setActiveKey}>
         <Nav variant="tabs" className="justify-content-center">
           <Nav.Item>
@@ -80,7 +82,7 @@ export default function Sidebar({ id }) {
             style={{cursor:'pointer'}}
             onClick={() => setProfileOpenModal(true)}
           >
-            { userData ? <img className='rounded-circle' alt='not found' src={userData.image} width={36} height={36} /> : <CgProfile size={36} color={'#ccc'}/>}
+            { userData?.image !== undefined ? <img className='rounded-circle' alt='not found' src={userData.image} width={36} height={36} /> : <CgProfile size={36} color={'#ccc'}/>}
             <span className="text-muted ml-2">{id}</span>
           </div>
           <div className='p-1' onClick={exitButtonHandle} style={{cursor:'pointer'}}>
