@@ -4,6 +4,7 @@ import { useContacts } from './ContactsProvider';
 import { useSocket } from './SocketProvider';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore'
 import db from '../Helpers/FirebaseHelper'
+import { uuidv4 } from '@firebase/util';
 
 const ConversationsContext = React.createContext()
 
@@ -43,10 +44,25 @@ export function ConversationsProvider({ id, children }) {
     func()
   }, [id, setConversations])
 
-  function createConversation(recipients) {
+  async function createConversation(recipients) {
+
+    const newUUID = uuidv4();
+    console.log('uuid -->', newUUID);
+    
+    setDoc(doc(db, 'conversations', `${newUUID}`), {
+      id: newUUID,
+      messages: [],
+      recipients: [...recipients, id] 
+    });
+
     setConversations(prevConversations => {
-      return [...prevConversations, { recipients, messages: [] }]
+      return [...prevConversations, { id: newUUID, recipients, messages: [] }]
     })
+    console.log('new conv --> ', {
+      messages: [],
+      recipients: [...recipients, id]
+    });
+    console.log('convs --> ', conversations);
   }
 
   const addMessageToConversation = useCallback(({ conversationId, recipients, text, sender }) => {
@@ -66,10 +82,18 @@ export function ConversationsProvider({ id, children }) {
         return conversation
       })
 
+      console.log('conversationId --> ', conversationId);
+      console.log('newConversations --> ', newConversations);
 
+      const updatedConversation = newConversations.filter(x => x.id === conversationId)[0]
+
+      console.log('updatedConversation --> ', updatedConversation);
       if (madeChange) {
         setDoc(doc(db, 'users', `${id}`), {
           conversations: newConversations
+        }, {merge: true});
+        setDoc(doc(db, 'conversations', `${conversationId}`), {
+          messages: updatedConversation.messages,
         }, {merge: true}); 
         return newConversations
       } else {
@@ -99,7 +123,7 @@ export function ConversationsProvider({ id, children }) {
   function sendMessage(conversationId, recipients, text) {
     socket.emit('send-message', { conversationId, recipients, text })
 
-    addMessageToConversation({ recipients, text, sender: id })
+    addMessageToConversation({ conversationId, recipients, text, sender: id })
   }
 
   const formattedConversations = conversations.map((conversation, index) => {
