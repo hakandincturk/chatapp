@@ -32,3 +32,11 @@ const docRef = await setDoc(doc(db, 'users', 'deneme', 'contacts', 'userId'), {
   password: 'dsa333', 
   pass: '123', 
 }, { merge: true });  
+
+
+// diff for humans
+const nowDate = moment();
+const fireBaseTime = new Date(
+  doc.data()?.updatedAt?.seconds * 1000 + doc.data()?.updatedAt?.nanoseconds / 1000000,
+);
+nowDate.diff(moment(fireBaseTime), 'hours')
