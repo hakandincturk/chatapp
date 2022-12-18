@@ -1,8 +1,10 @@
-import moment from 'moment';
 import React, { useState, useCallback, useEffect } from 'react'
 import { Form, InputGroup, Button } from 'react-bootstrap'
 import { useConversations } from '../contexts/ConversationsProvider';
 import lodash from 'lodash'
+import 'moment/locale/tr'
+import moment from 'moment';
+
 
 
 export default function OpenConversation() {
@@ -18,7 +20,7 @@ export default function OpenConversation() {
   useEffect(() => {
     
     var result = lodash.chain(selectedConversation?.messages)
-      .groupBy(datum => moment(new Date(new Date(datum.createdAt?.seconds * 1000 + datum.createdAt?.nanoseconds / 1000000))).format("MMM DD YYYY").toLocaleUpperCase() )
+      .groupBy(datum => moment(new Date(new Date(datum.createdAt?.seconds * 1000 + datum.createdAt?.nanoseconds / 1000000))).format("DD MMMM ").toLocaleUpperCase() )
       .map((messages, date) => ({ date, messages })) //using ES6 shorthand to generate the objects
       .value();
       
@@ -87,6 +89,7 @@ export default function OpenConversation() {
             <Form.Control
               type="textarea"
               required
+              autoFocus
               value={text}
               onChange={e => setText(e.target.value)}
               style={{ height: '75px', resize: 'none' }}
