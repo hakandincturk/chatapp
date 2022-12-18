@@ -1,11 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useState, useEffect, useCallback } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useContacts } from './ContactsProvider';
 import { useSocket } from './SocketProvider';
-import { doc, setDoc, collection, getDocs, Timestamp, orderBy, query } from 'firebase/firestore'
+import { doc, setDoc, collection, Timestamp, orderBy, query, onSnapshot } from 'firebase/firestore'
 import db from '../Helpers/FirebaseHelper'
 import { uuidv4 } from '@firebase/util';
-import moment from 'moment';
 
 const ConversationsContext = React.createContext()
 
@@ -20,38 +20,86 @@ export function ConversationsProvider({ id, children }) {
   const socket = useSocket()
 
   useEffect(() => {
-    setConversations([])
     const func = async () => {
-
-
       // const snap = await getDoc(doc(db, 'users', id ))
-      await getDocs(query(collection(db, "conversations"), orderBy('updatedAt', 'desc')))
-        .then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            if (doc?.data()?.recipients.includes(id)) {
-
-              const findLoggedUserIndex = doc.data().recipients.filter(x => x !== id)
-              
-              setConversations(prevConversations => {
-                return [
-                  ...prevConversations, 
-                  {
-                    id: doc.data().id,
-                    messages: doc.data()?.messages,
-                    recipients: findLoggedUserIndex,
-                    createdAt: doc.data()?.createdAt,
-                    updatedAt: doc.data()?.updatedAt
-                  }
-                ]
-              })
-            }
-          });
+    const q = query(collection(db, "conversations"), orderBy('updatedAt', 'desc'));
+      onSnapshot(q, (querySnapshot) => {
+      setConversations([])
+        querySnapshot.forEach(doc => {
+          if (doc?.data()?.recipients.includes(id)) {
+            const findLoggedUserIndex = doc.data().recipients.filter(x => x !== id)
+            setConversations(prevConversations => {
+              return [
+                ...prevConversations, 
+                {
+                  id: doc.data().id,
+                  messages: doc.data()?.messages,
+                  recipients: findLoggedUserIndex,
+                  createdAt: doc.data()?.createdAt,
+                  updatedAt: doc.data()?.updatedAt
+                }
+              ]
+            })
+          }
         })
+      })
+        // .then((querySnapshot) => {
+        //   querySnapshot.forEach((doc) => {
+        //     if (doc?.data()?.recipients.includes(id)) {
+
+        //       const findLoggedUserIndex = doc.data().recipients.filter(x => x !== id)
+              
+        //       setConversations(prevConversations => {
+        //         return [
+        //           ...prevConversations, 
+        //           {
+        //             id: doc.data().id,
+        //             messages: doc.data()?.messages,
+        //             recipients: findLoggedUserIndex,
+        //             createdAt: doc.data()?.createdAt,
+        //             updatedAt: doc.data()?.updatedAt
+        //           }
+        //         ]
+        //       })
+        //     }
+        //   });
+        // })
     }
     func()
   }, [id, setConversations])
 
+  useEffect(() => {
+  }, [conversations])
+
   async function createConversation(recipients) {
+
+    let conversationId = null;
+
+    const compareArray = (a, b) => {
+      if (a.length !== b.length) return false;
+      const uniqueValues = new Set([...a, ...b]);
+      for (const v of uniqueValues) {
+        const aCount = a.filter(e => e === v).length;
+        const bCount = b.filter(e => e === v).length;
+        if (aCount !== bCount) return false;
+      }
+      return true;
+    }
+
+    conversations.map((conversation, index) => {
+      if (compareArray(conversation.recipients, recipients)) {
+        conversationId = conversation.id;
+        return conversation.id
+      }
+      return false
+    })
+
+    console.log('conversationId --> ', conversationId);
+
+    if (conversationId) {
+      setSelectedConversationIndex(conversationId)
+      return 0;
+    }
 
     const newUUID = uuidv4();
     setDoc(doc(db, 'conversations', `${newUUID}`), {
@@ -61,6 +109,8 @@ export function ConversationsProvider({ id, children }) {
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     });
+
+    setSelectedConversationIndex(newUUID)
 
     setConversations(prevConversations => {
       return [...prevConversations, 
@@ -133,13 +183,37 @@ export function ConversationsProvider({ id, children }) {
 
   function sendMessage(conversationId, recipients, text) {
     socket.emit('send-message', { conversationId, recipients, text })
-
     addMessageToConversation({ conversationId, recipients, text, sender: id })
   }
 
   const formatted = (conversationId) => {
     const selectedObj = formattedConversations?.find((x) => x.selected);
     return selectedObj;
+  }
+
+  const format = (conversation) => {
+    const recipients = conversation.recipients.map(recipient => {
+      const contact = contacts.find(contact => {
+        return contact.id === recipient
+      })
+      const name = (contact && contact.name) || recipient
+      return { id: recipient, name }
+    })
+
+    const messages = conversation.messages.map(message => {
+      const contact = contacts.find(contact => {
+        return contact.id === message.sender
+      })
+      const name = (contact && contact.name) || message.sender
+      const fromMe = id === message.sender
+
+
+      return { ...message, senderName: name, fromMe }
+    })
+
+    
+    // const selected = conversation.id === selectedConversationIndex
+    return { messages, recipients, selected: false, id: conversation.id }
   }
 
   const formattedConversations = conversations.map((conversation, index) => {
@@ -164,36 +238,12 @@ export function ConversationsProvider({ id, children }) {
     const selected = conversation.id === selectedConversationIndex
     return { ...conversation, messages, recipients, selected, id: conversation.id }
   })
-
-  const sortConversations = () => {
-    console.log(2);
-    console.log('conversations -->', conversations);
-    const x = conversations.sort((a, b) => 
-        (
-          moment(new Date(a?.updatedAt?.seconds * 1000 + a?.updatedAt?.nanoseconds / 1000000)) <
-          moment(new Date(b?.updatedAt?.seconds * 1000 + b?.updatedAt?.nanoseconds / 1000000))
-        ) ? 1 : 
-        (
-          (
-            moment(new Date(b?.updatedAt?.seconds * 1000 + b?.updatedAt?.nanoseconds / 1000000)) <
-            moment(new Date(a?.updatedAt?.seconds * 1000 + a?.updatedAt?.nanoseconds / 1000000))
-          ) ? 
-          -1 :
-          0
-        ))
-      
-
-    console.log('x -->', x);
-
-    setConversations(x)
-
-    console.log('conversations 2--> ', conversations);
-  }
-
   const value = {
+    format,
     conversations: formattedConversations,
     selectedConversation: formatted(selectedConversationIndex),
     sendMessage,
+    selectedConversationIndex,
     selectConversationIndex: setSelectedConversationIndex,
     createConversation,
     setConversations,
