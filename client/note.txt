@@ -40,3 +40,10 @@ const fireBaseTime = new Date(
   doc.data()?.updatedAt?.seconds * 1000 + doc.data()?.updatedAt?.nanoseconds / 1000000,
 );
 nowDate.diff(moment(fireBaseTime), 'hours')
+
+//get collection data online 
+onSnapshot(q, (querySnapshot) => {
+        querySnapshot.forEach(doc => {
+          console.log(doc.data())
+        })
+      })

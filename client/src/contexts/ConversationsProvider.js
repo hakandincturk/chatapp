@@ -36,7 +36,8 @@ export function ConversationsProvider({ id, children }) {
                   messages: doc.data()?.messages,
                   recipients: findLoggedUserIndex,
                   createdAt: doc.data()?.createdAt,
-                  updatedAt: doc.data()?.updatedAt
+                  updatedAt: doc.data()?.updatedAt,
+                  deletedFrom: doc.data()?.deletedFrom
                 }
               ]
             })
@@ -86,15 +87,20 @@ export function ConversationsProvider({ id, children }) {
       return true;
     }
 
-    conversations.map((conversation, index) => {
+    conversations.map(async (conversation, index) => {
       if (compareArray(conversation.recipients, recipients)) {
+
         conversationId = conversation.id;
+        if(conversation?.deletedFrom?.includes(id)){
+          const deletedFrom = conversation?.deletedFrom?.filter(x => x !== id)
+          await setDoc(doc(db, 'conversations', conversation.id), {
+            deletedFrom
+          }, {merge: true});  
+        }
         return conversation.id
       }
       return false
     })
-
-    console.log('conversationId --> ', conversationId);
 
     if (conversationId) {
       setSelectedConversationIndex(conversationId)
@@ -106,6 +112,7 @@ export function ConversationsProvider({ id, children }) {
       id: newUUID,
       messages: [],
       recipients: [...recipients, id],
+      deletedFrom: [],
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     });
@@ -118,6 +125,7 @@ export function ConversationsProvider({ id, children }) {
           id: newUUID,
           recipients,
           messages: [],
+          deletedFrom: [],
           updatedAt: Timestamp.now(),
           createdAt: Timestamp.now()
       }]
@@ -127,7 +135,7 @@ export function ConversationsProvider({ id, children }) {
   const addMessageToConversation = useCallback(({ conversationId, recipients, text, sender }) => {
     setConversations(prevConversations => {
       let madeChange = false
-      const newMessage = { sender, text, createdAt: Timestamp.now() }
+      const newMessage = { sender, text, createdAt: Timestamp.now(), deletedFrom: [] }
       const newConversations = prevConversations.map(conversation => {
         if (arrayEquality(conversation.recipients, recipients)) {
           madeChange = true
@@ -144,23 +152,15 @@ export function ConversationsProvider({ id, children }) {
       const updatedConversation = newConversations.filter(x => x.id === conversationId)[0]
 
       if (madeChange) {
-        setDoc(doc(db, 'users', `${id}`), {
-          conversations: newConversations,
-          updatedAt: Timestamp.now()
-        }, {merge: true});
         setDoc(doc(db, 'conversations', `${conversationId}`), {
+          deletedFrom: [],
           messages: updatedConversation.messages,
           updatedAt: Timestamp.now()
         }, {merge: true}); 
         return newConversations
       } else {
-        setDoc(doc(db, 'users', `${id}`), {
-          conversations: [
-            ...prevConversations,
-            { recipients, messages: [newMessage], updatedAt: Timestamp.now() }
-          ]
-        }, {merge: true}); 
         setDoc(doc(db, 'conversations', `${conversationId}`), {
+          deletedFrom: [],
           messages: updatedConversation.messages,
           updatedAt: Timestamp.now()
         }, {merge: true}); 
@@ -199,21 +199,25 @@ export function ConversationsProvider({ id, children }) {
       const name = (contact && contact.name) || recipient
       return { id: recipient, name }
     })
+    
+    let messages = conversation.messages.filter(x => !x?.deletedFrom?.includes(id))
 
-    const messages = conversation.messages.map(message => {
+    messages = messages.map(message => {
       const contact = contacts.find(contact => {
         return contact.id === message.sender
       })
       const name = (contact && contact.name) || message.sender
       const fromMe = id === message.sender
-
-
-      return { ...message, senderName: name, fromMe }
+      return { 
+        ...message,
+        senderName: name,
+        fromMe,
+        deletedFrom: message?.deletedFrom
+      }
     })
 
-    
     // const selected = conversation.id === selectedConversationIndex
-    return { messages, recipients, selected: false, id: conversation.id }
+    return { messages, recipients, selected: false, id: conversation.id, deletedFrom: conversation?.deletedFrom  }
   }
 
   const formattedConversations = conversations.map((conversation, index) => {
@@ -225,18 +229,25 @@ export function ConversationsProvider({ id, children }) {
       return { id: recipient, name }
     })
 
-    const messages = conversation.messages.map(message => {
+    let messages = conversation.messages.filter(x => !x?.deletedFrom?.includes(id))
+
+    messages = messages.map(message => {
       const contact = contacts.find(contact => {
         return contact.id === message.sender
       })
       const name = (contact && contact.name) || message.sender
       const fromMe = id === message.sender
-      return { ...message, senderName: name, fromMe }
+      return { 
+        ...message,
+        senderName: name,
+        fromMe,
+        deletedFrom: message?.deletedFrom
+      }
     })
 
     
     const selected = conversation.id === selectedConversationIndex
-    return { ...conversation, messages, recipients, selected, id: conversation.id }
+    return { ...conversation, messages, recipients, selected, id: conversation.id, deletedFrom: conversation?.deletedFrom }
   })
   const value = {
     format,

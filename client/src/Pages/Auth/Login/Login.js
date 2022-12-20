@@ -3,9 +3,11 @@ import { Form, Button } from 'react-bootstrap'
 import toast  from 'react-hot-toast';
 
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import useLocalStorage from '../../../hooks/useLocalStorage';
 
 export default function Login({ onIdSubmit }) {
 
+  const [id, setId] = useLocalStorage('id')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -14,8 +16,9 @@ export default function Login({ onIdSubmit }) {
     try {
       await signInWithEmailAndPassword(getAuth(), email, password)
         .then((res) => {
-          sessionStorage.setItem('access-token', res._tokenResponse.refreshToken)
+          setId(email)
           onIdSubmit(email)
+          sessionStorage.setItem('access-token', res._tokenResponse.refreshToken)
         })
         .catch((err) => {
           if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {

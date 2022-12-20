@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react'
-import { ListGroup } from 'react-bootstrap'
+import { ListGroup, Modal } from 'react-bootstrap'
 import { useConversations } from '../contexts/ConversationsProvider';
 import useLocalStorage from '../hooks/useLocalStorage';
 
@@ -8,12 +8,16 @@ import { BsFillTrashFill } from 'react-icons/bs'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import db from '../Helpers/FirebaseHelper'
 
+import DeleteConversationModal from './DeleteConversationModal';
+
 
 export default function Conversations() {
 
   const [convs, setConvs] = useState([])
   const [pureConvs, setPureConvs] = useState([])
   const [id, setId] = useLocalStorage('id')
+  const [deletedConversationId, setDeletedConversationId] = useState('')
+  const [profileOpenModal, setProfileOpenModal] = useState(false)
 
   const { 
     conversations,
@@ -29,9 +33,10 @@ export default function Conversations() {
       onSnapshot(q, (querySnapshot) => {
         setPureConvs([])
         querySnapshot.forEach(doc => {
-          if (doc?.data()?.recipients.includes(id)) {
+          if (doc?.data()?.recipients.includes(id) && !doc?.data()?.deletedFrom.includes(id)) {
             const findLoggedUserIndex = doc.data().recipients.filter(x => x !== id)
             setPureConvs(prevConversations => {
+              // console.log('!prevConversations?.deletedFrom?.includes(id) -->', !prevConversations?.deletedFrom?.includes(id));
               return [
                 ...prevConversations, 
                 format({
@@ -39,7 +44,8 @@ export default function Conversations() {
                   messages: doc.data()?.messages,
                   recipients: findLoggedUserIndex,
                   createdAt: doc.data()?.createdAt,
-                  updatedAt: doc.data()?.updatedAt
+                  updatedAt: doc.data()?.updatedAt,
+                  deletedFrom: doc.data()?.deletedFrom
                 })
               ]
             })
@@ -47,18 +53,30 @@ export default function Conversations() {
         })
       })
       setConvs(pureConvs)
-    }, [format, id])
+    }, [format, id, setConvs])
+
+
+    useEffect(() => {
+      console.log(convs);
+    }, [convs])
 
   const handleDeleteButton = (index) => {
     const findedConv = conversations[index]
+    setDeletedConversationId(findedConv.id)
+    setProfileOpenModal(true)
     console.log('findedConv --> ', findedConv);
   }
 
+  const closeProfileModal = () => {
+    setProfileOpenModal(false)
+  }
+
   return (
+    <>
     <ListGroup variant="flush">
       {convs?.map((conversation, index) => (
         <ListGroup.Item
-          key={index}
+          key={conversation.id}
           action
           onClick={() => selectConversationIndex(conversation.id)}
           active={conversation.id === selectedConversationIndex}
@@ -70,5 +88,10 @@ export default function Conversations() {
         </ListGroup.Item>
       ))}
     </ListGroup>
+    <Modal key={3} show={profileOpenModal} onHide={closeProfileModal}>
+        <DeleteConversationModal closeModal={closeProfileModal} conversationId={deletedConversationId} />
+    </Modal>
+    </>
+    
   )
 }
